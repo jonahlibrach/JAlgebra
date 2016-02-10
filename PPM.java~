@@ -1,0 +1,25 @@
+public class PPM{
+ 
+  RGB[][] picture; 
+  
+  class RGB{
+   
+    public int r; 
+    public ing g; 
+    public int b; 
+    
+  }
+  
+  public static void main(String[]args){
+    
+  }
+  
+  
+  public rotate(){
+   
+    
+    
+    
+  }
+  
+}

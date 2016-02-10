@@ -1,0 +1,23 @@
+import java.util.LinkedList; 
+public class TestingClass{
+ 
+  /*
+  
+  Next steps: 
+  - evaluation
+  - simplification
+  - display in a nice format
+  
+  */
+  public static void main(String[]args){   
+  
+    Expression e = Parser.parse("(4+1-x)(y+z)"); 
+    
+    
+    System.out.println(AlgebraicManipulator.expansion(e)); 
+    
+    
+    
+  }
+  
+}

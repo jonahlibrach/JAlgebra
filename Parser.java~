@@ -1,0 +1,241 @@
+import java.util.*;  
+
+public class Parser{
+  /*
+   Soon I will have to remove the fact that Expressions start with a blank term, because that doesn't hide implementation from the client. 
+  */
+
+  
+  private class ParseTerm{
+    LinkedList<Factor> factorList; 
+    
+    public ParseTerm(){
+     factorList = new LinkedList<Factor>();  
+    }
+    public Factor addFactor(Factor f){
+   
+    factorList.add(f); 
+
+    return f; 
+    
+  }
+  }
+  
+  private static boolean wasNumber = false; 
+  private static boolean wasOperation = false; 
+  private static boolean needNumber = false; 
+  private static boolean signNextFactor = true; 
+  private static Stack<Expression> bracketStack = new Stack<Expression>(); 
+  private static Factor factorPointer;
+  private static Term termPointer; 
+  private static boolean gettingOperationalFactor = false; 
+  public static byte EXPONENT_FORMAT = 0; 
+  public final byte SHOW_DIVISION = 0, SHOW_NEGATIVE_EXPONENT = 1; 
+  
+  
+  
+  public static void main(String[] args){
+    Scanner sc = new Scanner(System.in); 
+    while(true){
+        System.out.println(Parser.parse(sc.nextLine())); 
+     }
+   }
+  
+  
+  public Expression parse(AlgebraicManipulator a, String s){
+  
+    return null; 
+    
+  }
+  
+  public static Expression parse(String s){
+   
+    Expression exp = new Expression(); 
+    for(char c : s.toCharArray())
+      process(c, exp); 
+    
+    if(bracketStack != null && !bracketStack.isEmpty())
+      throw new IllegalArgumentException("Unclosed brackets!");
+    
+    if(wasOperation || needNumber)
+      throw new IllegalArgumentException("Can't end with a "+ (wasOperation ? "operator." : "decimal point.")); 
+    
+    wasOperation = false; 
+    wasNumber = false; 
+    needNumber = false; 
+    while(!bracketStack.isEmpty())
+      bracketStack.clear();
+    return exp; 
+  }
+  
+
+
+  
+  private static Term newTerm(Expression exp){
+    if(bracketStack.isEmpty())
+      return exp.addTerm(new Term()); 
+    else return bracketStack.peek().addTerm(new Term()); 
+  }
+  
+  private static Term currentTerm(Expression exp){
+   
+    if(bracketStack.isEmpty()){
+      //System.out.println("The bracket stack is empty."); 
+      return exp.getLastTerm(); 
+    }
+   // System.out.println("~Parser(65): Bracket stack is not empty, in fact, the top element is: "+bracketStack.peek()); 
+    return bracketStack.peek().getLastTerm();  
+  }
+  
+  private static Factor currentFactor(Expression exp){
+  
+  /*if(operatingFactor != null)
+    System.out.println("Current factor is operating factor which is: " +operatingFactor); 
+    return operatingFactor; */
+  return currentTerm(exp).getLastFactor(); 
+    
+  }
+  
+  
+  private static void addNewFactor(Expression exp, Factor f){
+    //this currently doesn't make sense because we need to account for the NEXT term after an operational term is added
+     //is this the right place for this? 
+    
+    f.setSign(signNextFactor);
+    signNextFactor = true;  
+    if(wasOperation){
+      factorPointer = currentFactor(exp);
+      factorPointer.addOperation(f);
+      wasOperation = false;
+    }
+    else{
+      currentTerm(exp).addFactor(f); 
+    }
+    if(f instanceof Expression)
+        bracketStack.push((Expression)f); 
+  }
+  
+  private static void appendConstant(Expression exp, char c){
+    //THIS METHOD IS ONLY CALLED WHEN IT WAS A NUMBER
+    factorPointer = currentFactor(exp); 
+    if(factorPointer.isOperational()) //if its operational and it was a number, by logic it should be a constant and we'll append it. 
+          ((Constant)(factorPointer.getLastOperation())).append(c); 
+        else
+          ((Constant)factorPointer).append(c);
+    
+  }
+  
+  private static void process(char c, Expression exp){
+    
+    //we push a new term on the exp when bracketStack is empty? 
+   // System.out.println("----------------------\nCurrent char is: " +c+"\n----------------------"); 
+    termPointer = currentTerm(exp); 
+    //System.out.println("The current term: " +termPointer); 
+   // System.out.println("Last factor of current term is: " +termPointer.getLastFactor()); 
+  
+  // System.out.print("Before processing, the exp looks like this: ");
+   // System.err.println(exp+"\n"); 
+    
+    if(Character.isDigit(c)){
+      //System.out.println("Digit passed through: "+c); 
+      
+      if(wasNumber){
+        
+        appendConstant(exp, c); 
+        /*
+        we know it WAS a number last, so we need to get the last constant of the current factor, as shown above. 
+        */
+        
+        //continue here because on ANY other case we have to put wasNumber = false;\
+      }else{
+        /*what do we do if it wasn't a number and now it is? 
+         simply get the current term and add a factor. if we were previously operational, it doesn't matter because now we can ignore it. 
+         but what if we ARE operational???
+         
+       */
+        addNewFactor(exp, new Constant(c)); //use this method to add it.
+      }
+      
+      wasNumber = true; 
+      needNumber = false;
+      return; 
+      
+      }else if(needNumber){ //only gets to here if it wasn't a number, so we can automatically throw the exception
+        //only need a number when it WAS a '.'
+        throw new IllegalArgumentException("Needed a digit and got: "+c); 
+        
+      }else if(c=='.'){
+        //need a number after an exponent! 
+        needNumber = true; 
+        
+        if(!wasNumber)
+          throw new IllegalArgumentException("Cannot start a constant with \'.\'");
+        else
+          appendConstant(exp, c);
+        return; 
+      }else if(Character.isLetter(c)){
+        
+       // System.out.println("Got a variable: "+c); 
+        addNewFactor(exp, new Variable(c)); 
+        
+      }
+      else if(c == '('){
+        addNewFactor(exp, new Expression()); 
+         
+      }
+      else if(c == ')'){
+        try{
+          bracketStack.pop(); 
+        }catch(java.util.EmptyStackException ese){
+          throw new IllegalArgumentException("Extra closing bracket or improper use of closing bracket!"); 
+        }
+      }
+      else if(c == '+' || c == '-'){
+        signNextFactor ^= (c=='-'); 
+        
+        if(wasOperation && c == '-' || currentTerm(exp).isEmpty()){ //if getting operationalFactor, we need to give it a negatie.
+          //System.out.println("Operation ocurring and c == -, therefore next factor should be: " + (signNextFactor ? "+ve" : "-ve")); 
+          return;  
+        }else{
+         // System.out.println("Creating a new term with the first factor being: " + (signNextFactor ? "+ve" : "-ve"));
+          if(bracketStack.isEmpty()) 
+            exp.addTerm(new Term()); 
+          else
+            bracketStack.peek().addTerm(new Term());  
+        }
+      }else if (c==' '){ return; }
+      else{ //after the +/-
+        if(wasOperation)
+          throw new IllegalArgumentException("Cannot parse two operative symbols.");  
+        wasOperation = true; 
+        //if its an operation... we want to set up the factor (inside the current factor) which will store the operation
+        //probematically, we don't know the type of factor to be created. 
+        factorPointer = currentFactor(exp); 
+        if(factorPointer == null)
+          throw new IllegalArgumentException("Nothing precedes the operation!");  
+        factorPointer.setNextOperation(c); 
+        //System.out.println("New operation, " + c + ", on: " +factorPointer);  
+      }
+      wasNumber = false; 
+      //this must be here because on any case other than isDigit() is true, we have to say there wasn't a numebr!
+       
+  }
+    
+
+  
+  
+  
+  
+ 
+   
+  
+  
+  
+  
+  
+  
+  }
+
+  
+  
+  

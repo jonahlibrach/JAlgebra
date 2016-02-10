@@ -1,0 +1,146 @@
+import java.util.List; 
+import java.util.LinkedList;
+import java.util.Arrays; 
+import java.util.Iterator; 
+
+public class AlgebraicManipulator{
+  
+  public int compareOperations(char a, char b){
+
+    return a-b; 
+    
+  }
+  
+  
+ 
+  
+  public static BinaryTreeList<Term> expansion(Expression e){
+   
+    BinaryTreeList<Term> list = new BinaryTreeList<Term>(); 
+    for(Term t : e.terms())
+      list.addAll(expansion(t)); 
+    return list; 
+    
+    
+  }
+  
+  public static List<Term> expansion(Term t){
+    
+    //System.out.println("Trying to expand: " +t); 
+    
+    List<Term> termsToReturn = new LinkedList<Term>(); 
+    Term nonExpressionFactors = new Term(); 
+    List<Expression> expressionList = new LinkedList<Expression>(); 
+    
+    for(Factor f : t.factors()){
+      if(f instanceof Expression && f.operations().size() == 0){
+        expressionList.add((Expression)f); 
+      }else{
+        nonExpressionFactors.addFactor(f); 
+      }
+    }
+    
+    nonExpressionFactors.addFactors(t.constants()); 
+    System.out.println("Expression list: " +expressionList); 
+    System.out.println("Expression list size: " +expressionList.size()); 
+    System.out.println("Non-expression factors: " +nonExpressionFactors); 
+    
+    if(expressionList.isEmpty()){ 
+      System.out.println("This expression list is empty, so returning."); 
+      return new LinkedList<Term>(Arrays.asList(nonExpressionFactors)); 
+    }
+    
+    
+    LinkedList<Expression> expandedExpressions = new LinkedList<Expression>(); 
+    List<Term> termListPtr; 
+
+    
+      for(Expression toExpand : expressionList){
+        Expression expanded = new Expression(); 
+        
+        if(toExpand.operations().size() > 0){
+         
+          throw new UnsupportedOperationException("How did a factor with operations get here?"); 
+        }
+        //expandedExpressions.addLast(new Expression()); 
+        System.out.println("Looking to expand terms in: " +toExpand); 
+ 
+        for(Term termToExpand : toExpand.terms()){
+          System.out.println("In "+toExpand+", " +termToExpand+", is about to be expanded."); 
+          expanded.addTerms(expansion(termToExpand)); 
+        }
+        
+        expandedExpressions.add(expanded); 
+      }
+    
+    
+   
+    while(expandedExpressions.size() > 1){
+       System.out.println("Expanded expressions are: " +expandedExpressions); 
+      //pop two elements off, multiply them and add them back in. 
+      expandedExpressions.addFirst(new Expression(multiply(expandedExpressions.pop(), expandedExpressions.pop())));   
+                                   
+    }
+
+    System.out.println("Expanded expressions are: " +expandedExpressions);
+    
+    if(nonExpressionFactors.isEmpty())
+      return expandedExpressions.getFirst().terms(); 
+    return multiply(nonExpressionFactors, expandedExpressions.getFirst()).asList(); 
+
+ }
+  
+  
+  
+  public static Expression multiplyEntities(/*MathematicalEntity a, MathematicalEntity b*/){
+    return null;   
+  }
+
+  
+  private static Constant multiplyConstants(Constant a, Constant b){
+    
+    return new Constant(a.doubleValue() * b.doubleValue()); 
+    
+  }
+  
+  public static Term multiply(Term a, Term b){
+   System.out.print("Multiplying: (T) " + a + " * (T) " + b); 
+    Term t = new Term(); 
+   // System.out.println("So, combining: " +a.allFactors() + " and " + b.allFactors()); 
+    t.addFactors(a.allFactors()); 
+    t.addFactors(b.allFactors()); 
+    System.out.print(" = " +t+"\n"); 
+    return t; 
+  }
+  
+  public static BinaryTreeList<Term> multiply(Term t, Expression exp){
+   System.out.println("TERM VS. EXP"); 
+    BinaryTreeList<Term> toReturn = new BinaryTreeList<Term>(); 
+    for(Term toMultiply : exp.terms()){
+      toReturn.add(multiply(t, toMultiply)); 
+    }
+    return toReturn; 
+  }
+  
+  public static BinaryTreeList<Term> multiply(Expression a, Expression b){
+    System.out.println("Multiplying: " + a + " * " + b); 
+    List<Term> aTerms = a.terms(); 
+    List<Term> bTerms = b.terms(); 
+    BinaryTreeList<Term> product = new BinaryTreeList<Term>(); 
+    
+    for(Term p : aTerms)
+    for(Term q : bTerms){
+      product.add(multiply(p, q)); 
+    }
+    System.out.println("The product is: " +product); 
+    return product; 
+    
+  }
+  
+  
+  
+  
+  
+  
+  
+  }

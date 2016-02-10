@@ -1,0 +1,206 @@
+import java.util.LinkedList; 
+public class RecursiveParser{
+  
+  private static int index; 
+  
+  //return next factor implies operation on the last factor
+  
+  public static void main(String[]args){
+    String input = "18 - 48(14 - 35k)"; 
+    Expression e = (Expression)RecursiveParser.parse(input);
+    System.out.println("Expression: "+e); 
+    ////System.err.println(input); 
+    System.err.println("------EXPANSION-------"); 
+    System.out.println("FINAL EXP: "+AlgebraicManipulator.expansion(e)); 
+  }
+  
+  public static Factor parse(String input){
+    index = 0; 
+    return parse(input, false);  
+   
+  }
+  
+  private static void processSign(Term t, boolean sign){
+   if(!sign)
+     t.addFactor(AlgebraicConstants.NEGATIVE_ONE); 
+  }
+  
+  private static Factor parse(String input, boolean returnNextFactor){
+    
+    
+    LinkedList<Term> termList = new LinkedList<Term>(); 
+    
+    Term currentTerm = new Term(); 
+    Factor currentFactor = null; 
+    boolean expectNotPlus, curSign = true; 
+    char curChar; 
+    
+    while(index < input.length()){
+      curChar = input.charAt(index);
+      if(curChar == ' '){
+        index++; 
+        continue; 
+      }else if(curChar == '.')
+        throw new IllegalArgumentException("Illegal decimal point in string."); 
+      else if(curChar == '('){
+        if(returnNextFactor && currentFactor != null){
+          processSign(currentTerm, curSign); 
+          return currentFactor; //we don't increment because we need to parse this char regularly
+        }else if(currentFactor != null){
+          processSign(currentTerm, curSign); 
+          currentTerm.addFactor(currentFactor);
+          curSign = true;
+        }
+        index++;
+        currentFactor = parse(input, false); 
+        if(returnNextFactor){
+          processSign(currentTerm, curSign); 
+          return currentFactor; 
+        }
+        //currentTerm.addFactor(currentFactor, curSign); 
+        //System.out.println("45: "+currentFactor+" should be: " +curSign); 
+        //currentFactor = null; 
+        continue;
+      }
+      else if(curChar == ')'){
+        //this is the end of the factor and term
+        if(currentFactor == null)
+          throw new IllegalArgumentException("Improper usage of parentheses."); 
+        index++;
+        processSign(currentTerm, curSign); 
+        currentTerm.addFactor(currentFactor); 
+        termList.add(currentTerm); 
+        return new Expression(termList); 
+        
+      }
+      else if(Character.isDigit(curChar)){
+        //System.out.println("curChar is digit: " +curChar); 
+        if(currentFactor != null){//if there already is a factor (i.e., the one that is considered the 'next factor')
+          if(returnNextFactor){ //if we need to return it, (probably because of operations (we always return first factor after an operation))
+            processSign(currentTerm, curSign);
+            return currentFactor; 
+            
+          }
+          processSign(currentTerm, curSign);
+          currentTerm.addFactor(currentFactor);//if we don't need to return, we add the factor the current term 
+          curSign = true; 
+        }
+        currentFactor = parseConstant(input); //we then make the current factor the constant value that we are about to parse
+        //System.out.println("After parsing the number, got: " +currentFactor); 
+        
+      }     
+      
+      else if(Character.isLetter(curChar)){
+        if(currentFactor != null){
+          if(returnNextFactor){
+            processSign(currentTerm, curSign); 
+            return currentFactor;
+          }
+          currentTerm.addFactor(currentFactor); 
+          curSign = true; 
+        }
+        currentFactor = new Variable(curChar); 
+        
+      }
+      else if(curChar == '+' || curChar == '-'){
+        if(currentFactor != null){
+          processSign(currentTerm, curSign); 
+          if(returnNextFactor){
+            return currentFactor; 
+          }
+          currentTerm.addFactor(currentFactor); 
+         // curSign = curChar == '+'; 
+          termList.add(currentTerm); 
+          currentFactor = null; 
+          currentTerm = new Term(); 
+          //System.out.println("Reset term, there is now an empty term."); 
+        }
+          
+          //what happens if we get "++-+-)"      
+        curSign = parseSign(input); 
+        System.out.println("Current sign is: " +curSign); 
+                             
+      }
+      else{
+        if(currentFactor == null)
+          throw new IllegalArgumentException("Illegal operator placement."); 
+        index++; 
+        currentFactor.addOperation(curChar, parse(input, true)); 
+        continue; 
+      }
+      
+      index++; 
+    }
+    if(currentFactor != null){
+      processSign(currentTerm, curSign);
+      currentTerm.addFactor(currentFactor); 
+      curSign = true; 
+    }
+    termList.add(currentTerm); 
+    return new Expression(termList); 
+  }
+    
+    public static boolean parseSign(String input){
+      boolean sign = input.charAt(index) == '+'; 
+      int i = 0; 
+      char curChar; 
+      while(index + i + 1 < input.length()){
+        curChar = input.charAt(index+i+1); 
+        if(curChar == '+' || curChar == '-'){
+          sign ^= curChar == '-'; 
+          i++; 
+        }
+        else{
+          index += i; 
+          return sign; 
+        }
+        
+      }
+      throw new IllegalArgumentException("Expected a value after an arithmetic operator."); 
+      
+    }
+    
+    
+    
+    
+    public static Constant parseConstant(String input){
+      StringBuilder constant = new StringBuilder(); 
+      char curChar = input.charAt(index); 
+      boolean decimalSeen = false, expectDigit = false; 
+      int i = 0; 
+      while(index < input.length()){
+        curChar = input.charAt(index); 
+        
+        if(Character.isDigit(curChar)){
+          constant.append(curChar); 
+          if(expectDigit)
+            expectDigit = false; 
+        }
+        else if(expectDigit){
+          throw new IllegalArgumentException("Expected a digit after the decimal place.");  
+        }
+        else if(curChar == '.'){
+          if(decimalSeen){
+            constant.append('.'); 
+            throw new IllegalArgumentException("Illegal constant (multiple decimals): " + constant.toString()); 
+          }
+          decimalSeen = true; 
+          constant.append(curChar);
+          expectDigit = true; 
+        }
+        else{
+          index--;
+          break;
+        }
+        index++; 
+      } 
+      //we've gotten to the end of the string, now we need to check if we have everything that we need to form a valid expression/constant
+      
+      if(expectDigit)
+        throw new IllegalArgumentException("Expected a digit after the decimal place.");  
+      
+      return new Constant(Double.parseDouble(constant.toString())); 
+      
+    }
+    
+  }

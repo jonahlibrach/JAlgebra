@@ -1,0 +1,66 @@
+
+public class Variable extends Factor implements Comparable{
+  
+  private String subscript; 
+  private char letter; 
+   
+  
+  public Variable(char c){
+    this.letter = c; 
+    valueMask = new StringBuilder(""+c); 
+  }
+  
+  public char letter(){
+   return letter;  
+  }
+  
+  
+  public void append(char c){
+    throw new IllegalArgumentException("Can't append a variable"); 
+  }
+  
+  public void setSubscript(String s){
+    subscript = s; 
+  }
+  
+  
+  public void setValue(Constant constant){
+    //value = constant; 
+  }
+  
+  public String subscript(){
+   return subscript;  
+  }
+  public int compareTo(Object o){
+   
+    if(!(o instanceof Variable)){
+       throw new IllegalArgumentException("Variables only comparable to other factors.");
+    }
+       
+    
+    Variable that = (Variable)o;
+    
+    if(this.letter < that.letter())
+      return -1; 
+    else if(this.letter > that.letter())
+      return 1; 
+    else  
+      return operations.compareTo(that.operations);  
+
+    
+  }
+  
+  public Variable(Variable v){
+  
+    this.letter = v.letter(); 
+    operations = new OperationList(v.operations()); 
+  }
+  
+  
+  
+  
+  public String toString(){
+   return "("+valueMask + (operations != null ? operations.toString() : "")+")";   
+  }
+  
+}

@@ -1,0 +1,389 @@
+Programming Log
+
+Sunday March 2, 2014 (circa 12). 
+ - implemented improper bracket argument recognition. 
+ 
+ Efficiency Question: 
+ Should I ensure that the input is good before operating?
+ Should I operate until I find a bad input?
+ Eg) Check bracket validity before term severance? 
+ For now, quickest feedback: BFA (breadth first activity) is implemented. 
+ This gives quickest detection of an input error. 
+  - input errors include:
+  	- non-zero bracket charge at the end. 
+  	- double operators, **, //. (This isn't programming... its algebra). 
+  	  - ++ and -- are not incorrect. eg) 7--8 = 15. generally more preferable: 7-(-8), but it actually doesn't matter at all!
+  	  
+  - NEXT STEPS: 
+  
+  * Can't move on to next class until Expression is perfected. *
+  
+  Need to perfect formatting of operands.
+  
+  +-, ignore plus
+  -+, ignore plus
+  ++, ignore plus
+  --, convert to plus
+  
+  SHUTTING DOWN WITH A PROBLEM WITH CURRENT INPUT.
+  
+  "3-56" -> [3,-,5,6], like each char is a term. need to fix this when its not 1:09 AM. 
+  
+  Night boyyzzz eaze. 1:10 (monday now, 3 march, 2014)
+  
+  Monday March 3, 2014 5:50
+   - fixed problem with operator. 
+   
+   There are four types of expressions: 
+   constant exp: 5+3-6 etc
+   linear expression: 8x-3
+   quadratic etc: (x^2)-4 
+   rational expression: (x-1)/(x+1)
+  
+  regardless, rational expressions are defined by their rational terms. 
+  Expression's purpose is to manipulate a String in preparation for Term recognition. 
+  Since terms are only separated based on + and -, it seems pretty much done. 
+  I just need to now analyze the code, think of some tricky test cases and ensure its all good. 
+  Then, we can move on to the next step. 
+  
+  current error is "--(x^2)" -> [+(x^2)], we don't want the '+' in there.   
+  
+  Tuesday March 4, 2014.
+   -> should only be going for an hour (1:00 - 2:00) PD day. 
+   -> WAY too much work to be even doing this, but i need, so leggo. 
+   
+   ABOVE PROBLEM, EASY FIX: 
+   	Previously, it would only check for a plus at the VERY first char. Now, things can get altered with -+ etc.
+   	It now checks every time if it has + at beginning. If so, ignores the plus and adds the term as a string to ArrayList. 
+   	
+   	Found a nice test case: "---+-+-x--y+z"... this gives a brutal answer! --> [+--, -x+y, ] ??? :) fix time!
+   	Found fixes. 
+   	Also added recog of:
+   		"()"
+   		if bracketCharge is ever < 0
+   		if it ends with +- 
+   	
+   Should do a read through of the code and ensure its all nice and clean. 
+   
+Expression seems done for now, at 3:15, Tuesday March 4, 2014.
+NEXT STEPS: 
+
+	 - What is a term?
+	 - possible term inputs?
+	 - all elements of the sevTerms array is a term. 
+	 	 - need to check now, what kind of term it is. can it be further broken down?
+	 	 - is it (3x+4)(x-4) type? 
+	 	 
+FRIDAY March 7th 2014!
+
+Now that any expression is properly identified (to my knowledge), I need to start defining a term.
+
+What is a term?
+ - a constant eg) 3,10,-4
+ - variables eg) a,b,c
+ - Constants with capital letters: G, I, O
+ - variable type II: 3x, 10(x^4), -2u
+ - rational term: (x-3)/(x+3), a/b, 10/2
+ - exponential: 4^x, 4^(-1), 10^(2)
+ - multiplication: (I): 4*3
+ 				   (II): (5)(2)(3) 
+ - combinations: ((10)^(2*x))/5, or 4^(x-2)
+ 
+ ^ all the above contains FACTORS. 
+  - factors ARE not terms. they make up terms. 
+ 
+ Terms can be broken up into factors. 
+ factors can be broken up into factors eg) (3*4)(2).
+ 	1: Factors = (3*4) and (2)
+ 		(3*4) = 3*4
+ 			3*4 = 12
+    2:  (2) = 2
+    12 and 2 = 24, DONE.
+    
+ When computer is reading the data, terms are not broken up into terms. 
+ First, they are factors. Factors are broken up into terms or factors. 
+ 
+ We're recursively testing and organizing data until we get everything we need to know about the string. 
+ 
+ All terms have coefficients. By default, coeff is 1.
+ If there is a value before a bracket -3(x+2), we know the coeff is -3. 
+ 	Sometimes, cases will come up where we have: 3(x+2)3(x-4)
+ 		When finding factors, we need to isolate everything based on BRACKETS(), this symbol "*".
+ 		
+ ** It is important to always use BEDMAS! This means BRACKETCHARGE == 0 to start isolating. **
+ 
+ When we start isolating, how can we organize the data? Are trees efficient ways to store info?  
+ 
+ORDER OF OPERATIONS AND DATA, ORGANIZED INTO TREES!
+
+For example: 
+
+									(x+2)^3 - 4x/5
+									
+										/       \
+									   /         \
+									
+			ADD: 			(x+2)^3			-4x/5
+			
+								/    \			/ | \
+							   /      \		   /  |  \							
+					
+			EXPONENT -> 	x+2		   3	 -4  1/5  x	   <- MULTIPLICATION	
+
+							/
+						   /\
+			ADD:		 x    2
+
+I'm pretty sure that's how my brain "maps out" the equations.
+	With order of operations, I'm not sure if there is a more efficient way to look at things.
+	
+	March 17, 2014
+	
+	Also, with a tree, a breadth first search is done to ensure the data is good, but DFS is operated. 
+	
+	In the Term class, we pass each term found in the first search. 
+	To operate, we do the following in priority: 
+	 - brackets on the ends, just remove them if bracket charge is unchanged throughout the search. 
+	 	- we need to ensure unchanging charge in case we get two factor in brackets
+	 - separate terms by treating each term as a new Expression 
+	 - separate factors denoted by brackets (x-3)(x+2)
+	 - fractions or division denoted by "/"
+	 
+TUESDAY MARCH 18, 2014 (30 min limit today). 
+
+Basically the problem is the categorization of operations and ensuring that we know what is happening where. 
+So we'll separate things based on BEDMAS, in order of AME, brackets, exponentiation, multiplication, arithmetic. 
+
+Because operations are performed "DEPTH-FIRST", arithmetic gets performed last because it is separated first. 
+
+When analyzing our String, it is probably much faster not to make assumptions when were checking.
+Because there 3 possible operands, if we find an operand, we'll go with "GUILTY UNTIL PROVEN INNOCENT"
+If we see 3^3, we assume were dealing with exponentiation. However, if we later see multiplication (or before), 
+then we don't even consider Exponentiation a possibility because it is of lowest priority. 
+Same applies for multiplication and addition etc... 
+
+														
+									THIS IS A REALLY IMPORTANT QUESTION THAT 
+								    WOULD DRASTICALLY IMPROVE EFFICIENCY!
+														
+	"Can I linearly improve this by only checking String once and recording where everything is only that time?"
+
+This WOULD INSNELY reduce conditional searches and unnecessary re-loop through stuff I've already seen. 
+The lesson to learn, is NEVER waste any time.
+Because of bracket charge, things would only get attention with bracket charge of zero. 
+ - This way, everything gets checked and is pretty much organized on the first check. 
+ 
+ Okay, I'm done for today. Need to do DECA. *If I see this in the future: I literally started by DECA paper (11 pages),
+ 6 days before its due date, which is right now. I literally am the worst organized person of all time, but the problem 
+ is I just have way to much stuff I wanna do, it always gets in the way of something. 
+	 
+	 March 28th, 2014
+	 
+	 Annoying how little time I've had to even look at this. This is taking WAY more time than it should. 
+	 
+	 I am now developing my understanding of my linear parsing algorithm. 
+	 Its important to consider that:
+	 - Everything is part of a term.
+	 - All terms have FACTORS.
+	 - What is a factor?
+	 	- A factor is an entity that has (default): base(String), exponent(1), denominator(1), numerator(String)
+	 
+	 Basically what were doing is taking a string and predicting (based on given rules) how it will be organized
+	 as we iterate the string.  
+	 We can parse into Phrase(s) with these conditions: 
+
+	 - each letter and number is its own phrase. 32x = 32,x. 3xy5 = 3,x,y,5
+	 - +/- breaks up ANY Phrase at its level. (3-x)(3x-4)-2 = (3-x)(3x-4),-2
+	 - brackets are Phrases
+	 - Phrases in brackets start immediately after "(" and go until ")". 
+	 - Same rules apply to things within the brackets. 
+	 - To ensure accuracy and specificity, a factor's exponent is what come IMMEDIATELY after the "^"
+	 
+	 After some practicing, I eventually got faster with my algorithm and noticed its simplicity:
+	 Were saving our Strings in Objects that are easily accessed. This way, chars of substrings can easily be added. 
+	 
+	 Here is an example that I did: 
+	 
+	 (4^(x-3^(x+4^(x-3))))/(x-x^((x-y)/z))
+	  
+D1:	 (4^(x-3^(x+4^(x-3))))/(x-x^((x-y)/z))
+D2:   4^(x-3^(x+4^(x-3)))  (x-x^((x-y)/z))
+D3:   4 (x-3^(x+4^(x-3)))   x-x^((x-y)/z)
+D4:      x 3^(x+4^(x-3))    x x^((x-y)/z)
+D5:		   3 (x+4^(x-3))      x ((x-y)/z)
+D6:		      x+4^(x-3)          (x-y)/z
+D7:		      x 4^(x-3)          (x-y) z 
+D8:		        4 (x-3)           x-y
+D9:		           x-3            x y
+D10:	           x 3
+		   
+	How do we store these?
+	The answer is quite simple for now. 
+	All we need to do is instantiate an object for each Phrase/Entity, which means String of text that has space around it.  	
+	
+	The algorithm is actually quite simple: 
+	- On "(" we add to all, don't increase depth.
+	- On +,-,^,*,/,) we add to all except deepest, which decreases depth. 
+	- On variables or numbers we go all the way and increase depth. 
+	
+	The most difficult part (visually) is to differentiate things when its like: (x)(4), 4x... 
+	
+	The next step is figure out how to implement the algorithm and store the data so it is operable. 
+	P.S. this is absolutely, algorithmically, beautiful. 
+	
+	- I guess this might be it for tonight. 11:55 PM. Before I start to build my Factor, Term, Expression classes,
+	I want to ensure that my new algorithm is properly implemented. 	
+	
+	April 16, 2014 - Plane ride to Florida. 
+	
+	Its been years since... and now I need to finish this. 
+	
+	I've made progress on the rules and discovered the following:
+	
+	Factors:
+		- the have numerators and denominators. 
+		- default denominator is 1
+		- a "/" indicates that a Factor has the next direct factor in its denominator. 
+		- denominators are NOT set on terms because say we have ((x-2)/4)((x+2)/6). 
+			- In this case, 4 is not the denom of the term, nor is six. Really, its 24. 
+			- But we need to keep factors with denominators. 
+	
+	new Factor is initialized with: 
+		- "("
+		- xyz (i.e, any letter is a new factor)
+		- letter to number or number to letter
+		- the initialization of a new term
+		- the setting of an exponent (exponents are default set to 1), the exponent is a term, which is a factor, 
+		  so the above rules apply. 
+	Factors end with: 
+		- the start of a new factor given by all of the above ^
+		- ")"
+	Exponents:
+		- exponents are denoted by "^", where only the factor after the "^" is included as the exponent to a base
+		- the base is the FACTOR (not term) that comes directly before the "^"
+	Terms: 
+		- end and begin with +/-, pretty much the most simple of them all. 
+		
+	Since the entire String cannot be denoted as either a term or factor, we call the input string Expression. 
+	
+	How will variables work?
+	- we won't be able to simplify with exponential variables.
+	- this means we need to explicitly program method of expansion and simplification. 
+	- factoring will require implementation of GCD algorithms 		
+	- solving equations will require implementation of machine learning, most likely
+	
+	
+	~April 17, 2014~
+	
+	
+	- took me like a minute to throw in code for recognizing numbers and letters.
+	now i just need to implement rules and exceptions for decimals, but that should be quick as well.
+	need to add an excpectancy of a number after a decimal.
+	
+	~April 18, 2014~
+	
+	Sure, decimal was fine, but deleted everything. I need to code in preparation for everything. 
+	
+	Possible inputs are: operators, letters, numbers, decimal points
+	
+		Operators: 
+			- if its not + or -, it can't start a phrase.
+			- no operator can end a phrase
+			- the only operator(s) that can succeed another is + or -
+				Therefore, all operators expect either a number, letter or addition sign
+		
+		Letters: 
+			- all letters are separately added to the letter sign.
+			
+		Numbers: 
+			- numbers are built up until its end... either they StringBuilders that are appended at the beg of ArrayList
+			or they are temporarily stored 
+			
+		Decimals: 
+			- must have number before and number after.
+			- when decimals are read, we can only go on if a number precedes
+			- then we check if the next one is a number, if not, THORW NEW EXCEPTION
+			- there can only be 1 decimal in a number
+			
+		LOOKING INTO THE FUTURE, I SEE THAT THE CREATION OF A NUMBER CLASS COULD HELP... 
+		there already is a class called number... i'll create a class called Constant.
+				
+		Okay number parsing (including deicmals) works fine.
+		
+		Now I need to work on taking in everything else.
+		
+		Since were always adding to the end of a list, when a factor ends, we add a new factor and build 
+		on the one at the end of the list. 
+		
+		|eg| 
+		
+		Expression: 3+4(x-3(4+x(y+2)+x)x)
+		
+		new term: 3
+			new factor: 3
+			end factor: + (start new factor) 
+		new term: 
+			new factor: 4
+			new factor: (
+				new term: x
+					new factor: x
+					end factor: -
+				new term: 3
+					new factor: 3
+					new factor: (
+						new term:
+							new factor: 4
+						new term:
+							new factor: x
+							new factor: ( 
+								new term:
+									new factor: y
+								new term:
+									new factor: 2
+							end factor: )
+						new term:
+							new factor: x
+					end factor: )
+					new factor: x
+			end factor: )
+			
+	Now the question is how we could parse it. 
+	
+	In order to maniputlate, we would use a stack. Once were done we just pop and continue on the next one...
+	Just need to test that if it actually works. 
+	
+	~April 19, 2014~
+	
+	Just thinking about fractions and the Factor object.  
+						
+	how do insure division is being done properly?
+		- the algorithm should take care of itself... its done from left to right
+		so 1/2/3/4 will be 0.5/3/4 = 0.16667/4 = 0.0416667
+		
+	No boolean should be there about inverse for actual calculating. If I want to show steps this would come in handy. 
+	
+	Okay so the stack is only necessary with brackets.
+	
+	Wasted the entire friggen day, but I guess I learned a good lesson. I wrote shit down here, but there is no actual
+	plan for coding. 
+	
+	
+	THE GOAL: To create an algebra solving engine. 
+	THE STEPS: 
+		1) The computer must "understand" algebraic input. 
+			a) Algebraic input is represented by "algebraic expression". The computer must understand algebraic 
+			   expression. An expression is represented by several terms. Terms are represented by several factors. 
+			   Factors are either represented by a letter, numerical value or by a bracketed argument. A bracketed
+			   argument is represented by an expression.
+			   - The computer must be able to "understand" the relationship between letters (variables), numerical values
+			     and bracketed arguments. 			
+			
+		2) The computer must be able to organize and reorganize algebraic arguments. 
+		3) The computer must have intelligence so it can solve problems. 
+		
+	
+	LIRL, its June 5, 2014 @4:20 PM. 
+	I just got this thing working with plus and minuses! its unreal, now i wanna add in the 
+		
+		
+				

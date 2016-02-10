@@ -1,0 +1,247 @@
+import java.util.List; 
+import java.util.LinkedList; 
+import java.util.Iterator; 
+import java.util.Scanner; 
+import java.util.Collections; 
+import java.util.Collection; 
+public class BinaryTreeList<E extends Comparable> implements Iterable, Comparable{
+  
+  private void rangeCheck(int arg){
+   if(arg < 0 || arg >= size)
+     throw new IllegalArgumentException("Argument, "+arg+" is out of bounds."); 
+  }
+  
+  
+  
+  
+  private int size; 
+  private Node<E> root, first; 
+  
+  private class Node<E>{
+    private E e; 
+    private Node<E> left, right; 
+    private Node<E> next, prev; 
+    private int quantity; 
+    public Node(E e){
+      this.e = e; 
+      quantity = 1; 
+    }
+    
+    public E element(){
+      return this.e; 
+    }
+    
+    public String toString(){
+     return this.e.toString();  
+    }
+    
+  }
+  
+  public BinaryTreeList(){
+    
+  }
+  
+  public BinaryTreeList(Iterable<E> iterable){
+    Iterator<E> it = iterable.iterator(); 
+    while(it.hasNext())
+      add(it.next()); 
+    
+  }
+  
+  public boolean isEmpty(){
+   
+    //we can either remove all links, or, just remove the links in the tree to anything else. 
+    //not sure which is better in java's garbage collection
+    
+    return size == 0; 
+    
+    
+  }
+  
+  
+  private boolean add(Node<E> ptr, E e){
+    
+    int comp = e.compareTo(ptr.element()); 
+    
+    if(comp < 0){
+      if(ptr.left != null)
+        return add(ptr.left, e); 
+      else{
+        
+        ptr.left = new Node<E>(e); 
+        ptr.left.next = ptr; //the next link of new node is the immediately greater, which is the cur pointer
+        if(ptr.prev != null){ //if there is a previous to be given to the new node, give it. otherwise, leave null. 
+          ptr.left.prev = ptr.prev;  
+          ptr.prev.next = ptr.left; //the previous pointer's next must be the one that is immediately greater, which is the new one. 
+        }else{
+         first = ptr.left; //make the first node the new node that has nothing before it.  
+        }
+        ptr.prev = ptr.left; //the prev of the current now points to one that is smaller than prev, which is the new one
+        return false; 
+      }
+    }else if(comp > 0){
+      if(ptr.right != null)
+        return add(ptr.right, e); 
+      else{
+        ptr.right = new Node<E>(e);
+        ptr.right.prev = ptr; //connect the new its previous ptr
+        if(ptr.next != null){ //if the new can be connected to a next
+          ptr.right.next = ptr.next; //connect what's new and whats next 
+          ptr.next.prev = ptr.right;
+        }
+        ptr.next = ptr.right; //set the next to the new ptr. 
+        return false; 
+      }
+    }else if(comp == 0){
+      ptr.quantity++;
+      return true; 
+    }
+    throw new IllegalArgumentException("Non-real number returned from compareTo."); 
+  }
+  
+  public boolean add(E e){
+    System.out.println("Adding to tree: " +e); 
+    if(root == null){ 
+      root = new Node<E>(e); 
+      first = root;  
+      size++; 
+      return true; 
+    }
+    else
+      if(add(root, e)){
+      size++; 
+      return true; 
+    }
+
+    return false;   
+  }
+  
+  
+  
+  public int addAll(Iterable<E> list){
+   int newAdditions = 0; 
+   Iterator<E> iter = list.iterator(); 
+   while(iter.hasNext()){
+     if(add(iter.next())){
+       newAdditions++; 
+     }}
+   return newAdditions; 
+  }
+  
+  public E remove(E e){
+    throw new UnsupportedOperationException("Remove not yet implemented because it is not yet necessary.");  
+  }
+  
+  public int size(){
+    return this.size;  
+  }
+  
+  
+  
+  private void addToList(Node<E> node, LinkedList<E> list){
+    
+    for(int i = 0; i < node.quantity; i++){
+      list.addLast(node.element());  
+    }
+    
+    
+  }
+  
+  private void asList(Node<E> ptr, LinkedList<E> list){
+    
+    if(ptr == null)
+      return; 
+    asList(ptr.left, list); 
+    addToList(ptr, list); 
+    asList(ptr.right, list); 
+    
+  }
+  
+  public List<E> asList(){
+    LinkedList<E> linkedList = new LinkedList<E>();
+    Iterator<E> thisIter = iterator(); 
+    while(thisIter.hasNext())
+      linkedList.add(thisIter.next()); 
+    
+    return linkedList; 
+  }
+  
+  
+  public Iterator<E> iterator(){
+    
+    return new Iterator<E>(){
+                     private Node<E> ptr = first; 
+                     private Node<E> toReturn = null; 
+                     private int toRepeat = 0; 
+                        public boolean hasNext(){
+                         return ptr != null || toRepeat > 0;  
+                        }
+                        public E next(){
+                          if(toRepeat > 0)
+                            toRepeat--; 
+                          else{
+                            toReturn = ptr; 
+                            toRepeat = toReturn.quantity - 1; 
+                            ptr = ptr.next; 
+                            
+                          }
+                          return toReturn.element();  
+                        }
+                        public void remove(){
+                          throw new IllegalArgumentException("Cannot handle this request."); 
+                        }
+    };  
+    
+  }
+  
+  public boolean equals(Object o){
+    //would like to check size first, but almost impossible!
+    return this.compareTo(o) == 0; 
+    
+    
+  }
+  
+  public int compareTo(Object o){
+    
+    if(!(o instanceof BinaryTreeList))
+      throw new IllegalArgumentException("Cannot compare BinaryTreeList to a non-iterable object."); 
+    
+    BinaryTreeList that = (BinaryTreeList)o; 
+    Iterator<E> thatIter = that.iterator(); 
+    Iterator<E> thisIter = iterator(); 
+    
+    if(this.size() != that.size()){
+     if(this.size() < that.size())
+       return -1; 
+     return 1; 
+    }
+    int elementCompare; 
+    while(thisIter.hasNext()){
+     
+      elementCompare = thisIter.next().compareTo(thatIter.next()); 
+      if(elementCompare != 0)
+        return elementCompare; 
+      
+    }
+      return 0; 
+
+  }
+  
+  public String toString(){
+   
+    StringBuilder sb = new StringBuilder(); 
+    sb.append('['); 
+    Iterator<E> thisIter = iterator(); 
+    if(thisIter.hasNext())
+      sb.append(thisIter.next()); 
+    while(thisIter.hasNext()){
+      sb.append(','); 
+      sb.append(thisIter.next()); 
+    }
+   sb.append(']'); 
+   return sb.toString(); 
+  }
+
+  
+  
+}

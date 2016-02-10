@@ -1,0 +1,64 @@
+To expand a term, we need to expand all of the terms within any factor that is an expression. 
+
+If there are any expressions within a term, set them aside for further processing. Those that aren't expression, set them aside for later. 
+
+If there are expressions that were set aside: 
+	For each expression, e, add a new expression (for expanded terms). Each e has a 	set of terms t[i], that were set aside, expand(each 	term (t[i])) within it. 	Each expanded expression will be stored in a list, so each List<Term>			should be added to the most recent expression. 
+
+Else: 
+	return the non-expression terms as a list of terms (of size 1)
+
+
+
+
+
+
+
+
+public List<Term> expansion(Term t){
+
+	List<Term> termsToReturn = new LinkedList<Term>(); 
+	Term nonExpressionFactors = new Term(); 
+	List<Expression> expressionList; 
+
+	for(Factor f : t.factors()){
+		if(f instanceof Expression){
+			if(expressionList == null)
+				expressionList = new LinkedList<Expression>(); 
+			expressionList.add((Expression)f); 
+		}else{
+			nonExpressionFactors.add(f); 
+		}
+	}
+
+	if(expressionList == null){ return new LinkedList<Term>(Arrays.asList(nonExpressionFacors)); }
+
+	
+	LinkedList<Expression> expandedExpressions = new LinkedList<Expression>(); 
+
+	for(Expression exp : expressionList){
+		
+		expandedExpressions.addLast(new Expression(false)); 
+		
+		for(Term termToExpand : expressionList.terms()){
+		
+			expandedExpressions.getLast().add(expansion(termToExpand)); 
+
+		}
+	}
+	
+	while(expandedExpressions.size() > 1){
+		
+		//pop two elements off, multiply them and add them back in. 
+		expandedExpressions.addFirst(multiply(expandedExpressions.pop(), expandedExpressions.pop()); 		
+		
+	}
+
+	return multiply(nonExpressionFactors, expandedExpressions.getFirst()); 
+
+	
+	
+	
+	
+
+}
